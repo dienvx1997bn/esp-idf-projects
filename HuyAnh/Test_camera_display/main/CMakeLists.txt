@@ -1,9 +1,12 @@
 set(srcs "main.c"
     "st7789.c"
     "fontx.c"
-    "pngle.c"
     "m_camera.c"
+    "ultrasonic.c"
     )
+
+set(EXTRA_COMPONENT_DIRS ./ultrasonic)
+
 
 # Only ESP32 has enough memory to do jpeg decoding
 if(IDF_TARGET STREQUAL "esp32")

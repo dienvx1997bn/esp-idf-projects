@@ -21,6 +21,21 @@
 #define DIRECTION270		3
 
 
+// You have to set these CONFIG value using menuconfig.
+#if 1
+#define CONFIG_WIDTH  240
+#define CONFIG_HEIGHT 240
+#define CONFIG_MOSI_GPIO 4
+#define CONFIG_SCLK_GPIO 2
+#define CONFIG_CS_GPIO -1
+#define CONFIG_DC_GPIO 16
+#define CONFIG_RESET_GPIO 0
+#define CONFIG_BL_GPIO -1
+#define CONFIG_OFFSETX 0
+#define CONFIG_OFFSETY 0
+#endif
+
+
 typedef struct {
 	uint16_t _width;
 	uint16_t _height;
