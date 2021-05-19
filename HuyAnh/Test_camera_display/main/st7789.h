@@ -20,9 +20,10 @@
 #define DIRECTION180		2
 #define DIRECTION270		3
 
+#define CUSTOM_BOARD		0
 
 // You have to set these CONFIG value using menuconfig.
-#if 1
+#if CUSTOM_BOARD
 #define CONFIG_WIDTH  240
 #define CONFIG_HEIGHT 240
 #define CONFIG_MOSI_GPIO 4
@@ -31,6 +32,17 @@
 #define CONFIG_DC_GPIO 16
 #define CONFIG_RESET_GPIO 0
 #define CONFIG_BL_GPIO -1
+#define CONFIG_OFFSETX 0
+#define CONFIG_OFFSETY 0
+#else
+#define CONFIG_WIDTH  240
+#define CONFIG_HEIGHT 240
+#define CONFIG_MOSI_GPIO 19
+#define CONFIG_SCLK_GPIO 21
+#define CONFIG_CS_GPIO 12
+#define CONFIG_DC_GPIO 15
+#define CONFIG_RESET_GPIO -1
+#define CONFIG_BL_GPIO 2
 #define CONFIG_OFFSETX 0
 #define CONFIG_OFFSETY 0
 #endif
