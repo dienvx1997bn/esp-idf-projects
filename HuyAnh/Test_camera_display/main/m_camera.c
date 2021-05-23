@@ -31,7 +31,7 @@ static camera_config_t camera_config = {
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG,//YUV422,GRAYSCALE,RGB565,JPEG
-    .frame_size = FRAMESIZE_SVGA,//QQVGA-QXGA Do not use sizes above QVGA when not JPEG // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+    .frame_size = FRAMESIZE_VGA,//QQVGA-QXGA Do not use sizes above QVGA when not JPEG // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
 
     .jpeg_quality = 12, //0-63 lower number means higher quality
     .fb_count = 1 //if more than one, i2s runs in continuous mode. Use only with JPEG
@@ -70,7 +70,7 @@ esp_err_t m_camera_capture() {
     FILE* f = fopen("/spiffs/camera.jpg", "w");
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing");
-        return;
+        return ESP_FAIL;
     }
     fwrite(fb->buf, fb->len, 1, f); // payload (image), payload length
 

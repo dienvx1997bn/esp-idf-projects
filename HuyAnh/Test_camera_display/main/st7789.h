@@ -1,6 +1,6 @@
 #ifndef MAIN_ST7789_H_
 #define MAIN_ST7789_H_
-
+#include "config.h"
 #include "driver/spi_master.h"
 #include "fontx.h"
 
@@ -20,7 +20,6 @@
 #define DIRECTION180		2
 #define DIRECTION270		3
 
-#define CUSTOM_BOARD		0
 
 // You have to set these CONFIG value using menuconfig.
 #if CUSTOM_BOARD

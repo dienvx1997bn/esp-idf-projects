@@ -1,0 +1,4 @@
+Hello from esp32 example test send text file
+This is line 2
+this is line 3
+this is end of file

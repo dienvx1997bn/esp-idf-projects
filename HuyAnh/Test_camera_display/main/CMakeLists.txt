@@ -3,6 +3,7 @@ set(srcs "main.c"
     "fontx.c"
     "m_camera.c"
     "ultrasonic.c"
+    "m_espnow.c"
     )
 
 set(EXTRA_COMPONENT_DIRS ./ultrasonic)

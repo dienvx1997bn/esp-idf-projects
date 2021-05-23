@@ -19,7 +19,6 @@
 // #define CAM_PIN_HREF    27
 // #define CAM_PIN_PCLK    25
 
-
 //Ai thinker
 #define CAM_PIN_PWDN    32 //power down is not used
 #define CAM_PIN_RESET   -1 //software reset will be performed
