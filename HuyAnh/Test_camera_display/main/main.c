@@ -158,7 +158,7 @@ void task_mpu6050(void *ignore) {
 		accel_z = (data[4] << 8) | data[5];
 		// ESP_LOGI(TAG, "accel_x: %d, accel_y: %d, accel_z: %d", accel_x, accel_y, accel_z);
 		ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
-		vTaskDelay(500/portTICK_PERIOD_MS);
+		vTaskDelay(1000/portTICK_PERIOD_MS);
 	}
 
 	vTaskDelete(NULL);
@@ -238,7 +238,7 @@ void ST7789(void *pvParameters)
 	uint8_t fontHeight;
 	GetFontx(fx16, 0, buffer, &fontWidth, &fontHeight);
 
-	bool display_img = false;
+	bool display_img = true;
 	while(1) {
 		uint8_t  dst[60] = {0};
 		if(display_img == false) {
@@ -506,12 +506,14 @@ void app_main(void)
 	}
 	SPIFFS_Directory("/spiffs/");
 
-	// m_camera_init();
-	// ret = m_camera_capture();
-	// if (ret != ESP_OK) {
-    //     ESP_LOGE(TAG, "take photo fail");
-    // }
+	//camera test
+	m_camera_init();
+	ret = m_camera_capture();
+	if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "take photo fail");
+    }
 
+	//esp now init
 	example_wifi_init();
     example_espnow_init();
 
