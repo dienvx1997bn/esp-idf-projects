@@ -95,7 +95,7 @@ void task_mpu6050(void *ignore) {
 	conf.scl_io_num = PIN_CLK;
 	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-	conf.master.clk_speed = 400000;
+	conf.master.clk_speed = 100000;
 	ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
 	ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
 
@@ -230,13 +230,13 @@ void ST7789(void *pvParameters)
 
 	char file[32];
 
-	FontxFile fx24G[2];
-	InitFontx(fx24G,"/spiffs/ILGH24XB.FNT",""); // 12x24Dot Gothic
+	FontxFile fx16[2];
+	InitFontx(fx16,"/spiffs/ILGH16XB.FNT",""); // 12x24Dot Gothic
 
 	uint8_t buffer[FontxGlyphBufSize];
 	uint8_t fontWidth;
 	uint8_t fontHeight;
-	GetFontx(fx24G, 0, buffer, &fontWidth, &fontHeight);
+	GetFontx(fx16, 0, buffer, &fontWidth, &fontHeight);
 
 	bool display_img = false;
 	while(1) {
@@ -255,18 +255,23 @@ void ST7789(void *pvParameters)
 
 			#if ESP_NOW_MODE_SENDER
 			sprintf((char *)dst, "Distance: %d cm\n", distance);
-			lcdDrawString(&dev, fx24G, 0, 20, dst, RED);
+			lcdDrawString(&dev, fx16, 0, 20, dst, RED);
+			ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
+			sprintf((char *)dst, "accel_x: %.4f\n", accel_x/16384.0);
+			lcdDrawString(&dev, fx16, 0, 50, dst, RED);
+			sprintf((char *)dst, "accel_y: %.4f \n", accel_y/16384.0);
+			lcdDrawString(&dev, fx16, 0, 80, dst, RED);
+			sprintf((char *)dst, "accel_z: %.4f\n", accel_z/16384.0);
+			lcdDrawString(&dev, fx16, 0, 110, dst, RED);
 			#else
-			sprintf((char *)dst, "recv: %s", recv_msg);
-			lcdDrawString(&dev, fx24G, 0, 20, dst, RED);
+			if(recv_msg[0] != 0) 
+			{
+				sprintf((char *)dst, "%s", recv_msg);
+				lcdDrawString(&dev, fx16, 0, 20, dst, RED);
+				memset(recv_msg, 0, sizeof(recv_msg));
+			}
 			#endif
-			// ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
-			// sprintf((char *)dst, "accel_x: %.4f\n", accel_x/16384.0);
-			// lcdDrawString(&dev, fx24G, 0, 50, dst, RED);
-			// sprintf((char *)dst, "accel_y: %.4f \n", accel_y/16384.0);
-			// lcdDrawString(&dev, fx24G, 0, 80, dst, RED);
-			// sprintf((char *)dst, "accel_z: %.4f\n", accel_z/16384.0);
-			// lcdDrawString(&dev, fx24G, 0, 110, dst, RED);
+			
 		}
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	} // end while
@@ -399,11 +404,13 @@ static void example_espnow_task(void *pvParameter)
 	{
 		/* code */
 		#if ESP_NOW_MODE_SENDER
-		char buff[20];
-		sprintf(buff, "distance: %d", distance);
-		example_espnow_send_data((uint8_t *)buff, strlen(buff),20);
-		// example_espnow_send_image();
-		// vTaskDelete(NULL);
+		if(distance < 20) {
+			char buff[50];
+			sprintf(buff, "xe phia truoc co va cham");
+			example_espnow_send_data((uint8_t *)buff, strlen(buff),50);
+			// example_espnow_send_image();
+			// vTaskDelete(NULL);
+		}
 		#else
 
 		#endif
@@ -517,10 +524,10 @@ void app_main(void)
 	
 	xTaskCreate(ST7789, "ST7789", configMINIMAL_STACK_SIZE * 10, NULL, 6, NULL);
 	#if CUSTOM_BOARD
-	xTaskCreate(ultrasonic_test, "ultrasonic_test", configMINIMAL_STACK_SIZE * 5, NULL, 6, NULL);
+	xTaskCreate(ultrasonic_test, "ultrasonic_test", configMINIMAL_STACK_SIZE * 4, NULL, 6, NULL);
+	xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
 	#else
 	#endif
-	// xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 8, NULL, 2, NULL);
 	xTaskCreate(example_espnow_task, "example_espnow_task", 4096, NULL, 4, NULL);
 
 	while (1)
