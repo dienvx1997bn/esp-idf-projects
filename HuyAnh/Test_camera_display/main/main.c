@@ -50,6 +50,8 @@
 #define ESPNOW_WIFI_IF   ESP_IF_WIFI_AP
 #endif
 
+static uint8_t s_example_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
 #if CUSTOM_BOARD
 uint8_t s_example_peer_mac[ESP_NOW_ETH_ALEN] = { 0x8c, 0xaa, 0xb5, 0x85, 0x7b, 0x70 };
 #else
@@ -58,7 +60,10 @@ uint8_t s_example_peer_mac[ESP_NOW_ETH_ALEN] = { 0x9c, 0x9c, 0x1f, 0xc7, 0xd1, 0
 
 esp_err_t example_espnow_add_device(uint8_t *peer_mac, uint8_t peer_len);
 
-char recv_msg[50] = {0};
+char recv_msg[250] = {0};
+
+extern xQueueHandle s_example_espnow_queue;
+
 
 #define PIN_SDA 15
 #define PIN_CLK 14
@@ -240,7 +245,7 @@ void ST7789(void *pvParameters)
 
 	bool display_img = true;
 	while(1) {
-		uint8_t  dst[60] = {0};
+		uint8_t  dst[250] = {0};
 		if(display_img == false) {
 			// strcpy(file, "/spiffs/esp32.jpeg");
 			strcpy(file, "/spiffs/camera.jpg");
@@ -253,7 +258,6 @@ void ST7789(void *pvParameters)
 			lcdFillScreen(&dev, BLACK);
 			lcdSetFontDirection(&dev, 0);
 
-			#if ESP_NOW_MODE_SENDER
 			sprintf((char *)dst, "Distance: %d cm\n", distance);
 			lcdDrawString(&dev, fx16, 0, 20, dst, RED);
 			ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
@@ -263,14 +267,13 @@ void ST7789(void *pvParameters)
 			lcdDrawString(&dev, fx16, 0, 80, dst, RED);
 			sprintf((char *)dst, "accel_z: %.4f\n", accel_z/16384.0);
 			lcdDrawString(&dev, fx16, 0, 110, dst, RED);
-			#else
+
 			if(recv_msg[0] != 0) 
 			{
 				sprintf((char *)dst, "%s", recv_msg);
-				lcdDrawString(&dev, fx16, 0, 20, dst, RED);
+				lcdDrawString(&dev, fx16, 0, 200, dst, RED);
 				memset(recv_msg, 0, sizeof(recv_msg));
 			}
-			#endif
 			
 		}
 		vTaskDelay(pdMS_TO_TICKS(1000));
@@ -316,123 +319,22 @@ void ultrasonic_test(void *pvParameters)
 			static uint16_t time = 0;
 			printf("Time %d -Distance: %d cm\n", time, distance);
 			time++;
+
+			if(distance > 0 && distance < 10) {
+				extern uint8_t unicast_mac_list[MAX_UNICAST_DEVICE][ESP_NOW_ETH_ALEN];
+				char data[50];
+				sprintf(data, "phia truoc co va cham %d", distance);
+				if (esp_now_send(unicast_mac_list[0], (uint8_t *)data, strlen(data)) != ESP_OK) {
+					ESP_LOGE(TAG, "Send notify error");
+					// example_espnow_deinit(send_param);
+					// vTaskDelete(NULL);
+				}
+				ESP_LOGI(TAG, "Send notify success");
+			}
 		}
 
         vTaskDelay(pdMS_TO_TICKS(500));
     }
-}
-
-static void example_espnow_send_data(uint8_t *buff, uint32_t len, uint16_t size) {
-	uint32_t count = 0;
-	esp_err_t ret;
-	uint8_t *ptr = buff;
-
-	while (1)
-	{
-		if(count + size < len) {
-			ret = esp_now_send(s_example_peer_mac, ptr, size);
-			if(ret != ESP_OK)
-				ESP_LOGE(TAG, "Send error");
-			count += size;
-			ptr += size;
-		} else {
-			ret = esp_now_send(s_example_peer_mac, ptr, len - count);
-			if(ret != ESP_OK)
-				ESP_LOGE(TAG, "Send error");
-				break;
-		}
-		vTaskDelay(1);
-	}
-	ESP_LOGI(TAG, "Send success");
-}
-
-static esp_err_t example_espnow_send_image() {
-	uint32_t count = 0;
-	esp_err_t ret;
-	uint8_t *ptr = NULL;
-	uint16_t size = 200;
-
-	FILE* file;
-    char file_buf[200];
-    unsigned int file_size = 0;
-
-    file = fopen("/spiffs/data.txt", "rb");
-    if(file != NULL) {
-        fseek(file, 0, SEEK_END);
-        file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-        ESP_LOGI("SPIFFS", "File open \"/spiffs/data.txt\". File size: %d Bytes", file_size);
-
-
-        // file_buf = (char *)malloc(file_size);
-        // if (file_buf == NULL) {
-		//     ESP_LOGE("SPIFFS", "Failed to allocate memory");
-		//     return ESP_FAIL;
-	    // }
-        file_size = fread(file_buf, sizeof(file_buf), 1, file);
-		*ptr = (uint8_t *)file_buf;
-		while (1) {
-			if(count + size < file_size) {
-				ret = esp_now_send(s_example_peer_mac, ptr, size);
-				if(ret != ESP_OK)
-					ESP_LOGE(TAG, "Send error");
-				count += size;
-				ptr += size;
-			} else {
-				ret = esp_now_send(s_example_peer_mac, ptr, file_size - count);
-				if(ret != ESP_OK)
-					ESP_LOGE(TAG, "Send error");
-					break;
-			}
-			vTaskDelay(10);
-		}
-		ESP_LOGI(TAG, "Send success");
-
-		free(file_buf);
-        fclose(file);
-    } else {
-        ESP_LOGE("SPIFFS", "Failed to open file for sending");
-    }
-
-	return ESP_OK;
-}
-
-
-static void example_espnow_task(void *pvParameter)
-{
-    while (1)
-	{
-		/* code */
-		#if ESP_NOW_MODE_SENDER
-		if(distance < 20) {
-			char buff[50];
-			sprintf(buff, "xe phia truoc co va cham");
-			example_espnow_send_data((uint8_t *)buff, strlen(buff),50);
-			// example_espnow_send_image();
-			// vTaskDelete(NULL);
-		}
-		#else
-
-		#endif
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-	
-}
-
-/* WiFi should start before using ESPNOW */
-static void example_wifi_init(void)
-{
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    ESP_ERROR_CHECK( esp_wifi_set_mode(ESPNOW_WIFI_MODE) );
-    ESP_ERROR_CHECK( esp_wifi_start());
-
-#if CONFIG_ESPNOW_ENABLE_LONG_RANGE
-    ESP_ERROR_CHECK( esp_wifi_set_protocol(ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
-#endif
 }
 
 esp_err_t example_espnow_add_device(uint8_t *peer_mac, uint8_t peer_len) {
@@ -444,9 +346,71 @@ esp_err_t example_espnow_add_device(uint8_t *peer_mac, uint8_t peer_len) {
     peer->encrypt = false;
     memcpy(peer->peer_addr, peer_mac, peer_len);
     ESP_ERROR_CHECK( esp_now_add_peer(peer) );
-    free(peer);
+	free(peer);
+
+	add_to_unicast_mac_list(peer_mac);
 
 	return ESP_OK;
+}
+
+static void example_espnow_task(void *pvParameter) {
+
+	example_espnow_event_t evt;
+
+	s_example_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(example_espnow_event_t));
+    if (s_example_espnow_queue == NULL) {
+        ESP_LOGE(TAG, "Create mutex fail");
+        // return ESP_FAIL;
+		vTaskDelete(NULL);
+    }
+
+	while (xQueueReceive(s_example_espnow_queue, &evt, portMAX_DELAY) == pdTRUE) {
+		switch (evt.id) {
+            case EXAMPLE_ESPNOW_SEND_CB:
+			{
+
+			}
+			break;
+
+			case EXAMPLE_ESPNOW_RECV_CB:
+            {
+				example_espnow_event_recv_cb_t *recv_cb = &evt.info.recv_cb;
+				/* If MAC address does not exist in peer list, add it to peer list. */
+				if (esp_now_is_peer_exist(recv_cb->mac_addr) == false) {
+					example_espnow_add_device(recv_cb->mac_addr, ESP_NOW_ETH_ALEN);
+				}
+				
+				//copy data to string
+				memcpy(recv_msg,  recv_cb->data, recv_cb->data_len);
+				
+				free(recv_cb->data);	//remember free malloc data
+			}
+			break;
+
+			default:
+                ESP_LOGE(TAG, "Callback type error: %d", evt.id);
+                break;
+		}
+	}
+
+}
+
+static void example_espnow_boardcast_task(void *pvParameter)
+{
+	char data[] = "Hello this is broad cast message";
+
+	vTaskDelay(5000/portTICK_PERIOD_MS);
+    while (1)
+	{
+		/* code */
+		if (esp_now_send(s_example_broadcast_mac, (uint8_t *)data, strlen(data)) != ESP_OK) {
+			ESP_LOGE(TAG, "example_espnow_boardcast_task Send error");
+			// example_espnow_deinit(send_param);
+			vTaskDelete(NULL);
+		}
+		ESP_LOGI(TAG, "example_espnow_boardcast_task");
+		vTaskDelay(5000/portTICK_PERIOD_MS);
+	}
 }
 
 
@@ -507,29 +471,33 @@ void app_main(void)
 	SPIFFS_Directory("/spiffs/");
 
 	//camera test
-	m_camera_init();
-	ret = m_camera_capture();
-	if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "take photo fail");
-    }
+	// m_camera_init();
+	// ret = m_camera_capture();
+	// if (ret != ESP_OK) {
+    //     ESP_LOGE(TAG, "take photo fail");
+    // }
 
 	//esp now init
 	example_wifi_init();
     example_espnow_init();
 
-	#if CUSTOM_BOARD
-	example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
-	#else
-	example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
-	#endif
+	// #if CUSTOM_BOARD
+	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
+	// #else
+	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
+	// #endif
 	
 	
 	xTaskCreate(ST7789, "ST7789", configMINIMAL_STACK_SIZE * 10, NULL, 6, NULL);
 	#if CUSTOM_BOARD
 	xTaskCreate(ultrasonic_test, "ultrasonic_test", configMINIMAL_STACK_SIZE * 4, NULL, 6, NULL);
-	xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
+	// xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
 	#else
 	#endif
+	
+	
+
+    xTaskCreate(example_espnow_boardcast_task, "example_espnow_boardcast_task", 2048, NULL, 4, NULL);
 	xTaskCreate(example_espnow_task, "example_espnow_task", 4096, NULL, 4, NULL);
 
 	while (1)
