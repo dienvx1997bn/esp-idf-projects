@@ -4,6 +4,7 @@ set(srcs "main.c"
     "m_camera.c"
     "ultrasonic.c"
     "m_espnow.c"
+    "m_sim808.c"
     )
 
 set(EXTRA_COMPONENT_DIRS ./ultrasonic)

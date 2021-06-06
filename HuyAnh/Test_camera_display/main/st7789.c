@@ -36,19 +36,19 @@ void spi_master_init(TFT_t * dev, int16_t GPIO_MOSI, int16_t GPIO_SCLK, int16_t 
 {
 	esp_err_t ret;
 
-	ESP_LOGI(TAG, "GPIO_CS=%d",GPIO_CS);
+	//ESP_LOGI(TAG, "GPIO_CS=%d",GPIO_CS);
 	if ( GPIO_CS >= 0 ) {
 		gpio_pad_select_gpio( GPIO_CS );
 		gpio_set_direction( GPIO_CS, GPIO_MODE_OUTPUT );
 		gpio_set_level( GPIO_CS, 0 );
 	}
 
-	ESP_LOGI(TAG, "GPIO_DC=%d",GPIO_DC);
+	//ESP_LOGI(TAG, "GPIO_DC=%d",GPIO_DC);
 	gpio_pad_select_gpio( GPIO_DC );
 	gpio_set_direction( GPIO_DC, GPIO_MODE_OUTPUT );
 	gpio_set_level( GPIO_DC, 0 );
 
-	ESP_LOGI(TAG, "GPIO_RESET=%d",GPIO_RESET);
+	//ESP_LOGI(TAG, "GPIO_RESET=%d",GPIO_RESET);
 	if ( GPIO_RESET >= 0 ) {
 		gpio_pad_select_gpio( GPIO_RESET );
 		gpio_set_direction( GPIO_RESET, GPIO_MODE_OUTPUT );
@@ -60,15 +60,15 @@ void spi_master_init(TFT_t * dev, int16_t GPIO_MOSI, int16_t GPIO_SCLK, int16_t 
 		delayMS(50);
 	}
 
-	ESP_LOGI(TAG, "GPIO_BL=%d",GPIO_BL);
+	//ESP_LOGI(TAG, "GPIO_BL=%d",GPIO_BL);
 	if ( GPIO_BL >= 0 ) {
 		gpio_pad_select_gpio(GPIO_BL);
 		gpio_set_direction( GPIO_BL, GPIO_MODE_OUTPUT );
 		gpio_set_level( GPIO_BL, 0 );
 	}
 
-	ESP_LOGI(TAG, "GPIO_MOSI=%d",GPIO_MOSI);
-	ESP_LOGI(TAG, "GPIO_SCLK=%d",GPIO_SCLK);
+	//ESP_LOGI(TAG, "GPIO_MOSI=%d",GPIO_MOSI);
+	//ESP_LOGI(TAG, "GPIO_SCLK=%d",GPIO_SCLK);
 	spi_bus_config_t buscfg = {
 		.sclk_io_num = GPIO_SCLK,
 		.mosi_io_num = GPIO_MOSI,
@@ -78,7 +78,7 @@ void spi_master_init(TFT_t * dev, int16_t GPIO_MOSI, int16_t GPIO_SCLK, int16_t 
 	};
 
 	ret = spi_bus_initialize( LCD_HOST, &buscfg, DMA_CHAN );
-	ESP_LOGD(TAG, "spi_bus_initialize=%d",ret);
+	//ESP_LOGD(TAG, "spi_bus_initialize=%d",ret);
 	assert(ret==ESP_OK);
 
 	spi_device_interface_config_t devcfg={
@@ -96,7 +96,7 @@ void spi_master_init(TFT_t * dev, int16_t GPIO_MOSI, int16_t GPIO_SCLK, int16_t 
 	
 	spi_device_handle_t handle;
 	ret = spi_bus_add_device( LCD_HOST, &devcfg, &handle);
-	ESP_LOGD(TAG, "spi_bus_add_device=%d",ret);
+	//ESP_LOGD(TAG, "spi_bus_add_device=%d",ret);
 	assert(ret==ESP_OK);
 	dev->_dc = GPIO_DC;
 	dev->_bl = GPIO_BL;
@@ -190,7 +190,7 @@ bool spi_master_write_colors(TFT_t * dev, uint16_t * colors, uint16_t size)
 void delayMS(int ms) {
 	int _ms = ms + (portTICK_PERIOD_MS - 1);
 	TickType_t xTicksToDelay = _ms / portTICK_PERIOD_MS;
-	ESP_LOGD(TAG, "ms=%d _ms=%d portTICK_PERIOD_MS=%d xTicksToDelay=%d",ms,_ms,portTICK_PERIOD_MS,xTicksToDelay);
+	//ESP_LOGD(TAG, "ms=%d _ms=%d portTICK_PERIOD_MS=%d xTicksToDelay=%d",ms,_ms,portTICK_PERIOD_MS,xTicksToDelay);
 	vTaskDelay(xTicksToDelay);
 }
 
@@ -299,7 +299,7 @@ void lcdDrawFillRect(TFT_t * dev, uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 	if (y1 >= dev->_height) return;
 	if (y2 >= dev->_height) y2=dev->_height-1;
 
-	ESP_LOGD(TAG,"offset(x)=%d offset(y)=%d",dev->_offsetx,dev->_offsety);
+	//ESP_LOGD(TAG,"offset(x)=%d offset(y)=%d",dev->_offsetx,dev->_offsety);
 	uint16_t _x1 = x1 + dev->_offsetx;
 	uint16_t _x2 = x2 + dev->_offsetx;
 	uint16_t _y1 = y1 + dev->_offsety;
@@ -315,7 +315,7 @@ void lcdDrawFillRect(TFT_t * dev, uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 		spi_master_write_color(dev, color, size);
 #if 0
 		for(j=y1;j<=y2;j++){
-			//ESP_LOGD(TAG,"i=%d j=%d",i,j);
+			////ESP_LOGD(TAG,"i=%d j=%d",i,j);
 			spi_master_write_data_word(dev, color);
 		}
 #endif
@@ -550,8 +550,8 @@ void lcdDrawRoundRect(TFT_t * dev, uint16_t x1, uint16_t y1, uint16_t x2, uint16
 		temp=y1; y1=y2; y2=temp;
 	} // endif
 
-	ESP_LOGD(TAG, "x1=%d x2=%d delta=%d r=%d",x1, x2, x2-x1, r);
-	ESP_LOGD(TAG, "y1=%d y2=%d delta=%d r=%d",y1, y2, y2-y1, r);
+	//ESP_LOGD(TAG, "x1=%d x2=%d delta=%d r=%d",x1, x2, x2-x1, r);
+	//ESP_LOGD(TAG, "y1=%d y2=%d delta=%d r=%d",y1, y2, y2-y1, r);
 	if (x2-x1 < r) return; // Add 20190517
 	if (y2-y1 < r) return; // Add 20190517
 
@@ -570,10 +570,10 @@ void lcdDrawRoundRect(TFT_t * dev, uint16_t x1, uint16_t y1, uint16_t x2, uint16
 		if (old_err>y || err>x) err+=++y*2+1;	 
 	} while(y<0);
 
-	ESP_LOGD(TAG, "x1+r=%d x2-r=%d",x1+r, x2-r);
+	//ESP_LOGD(TAG, "x1+r=%d x2-r=%d",x1+r, x2-r);
 	lcdDrawLine(dev, x1+r,y1  ,x2-r,y1	,color);
 	lcdDrawLine(dev, x1+r,y2  ,x2-r,y2	,color);
-	ESP_LOGD(TAG, "y1+r=%d y2-r=%d",y1+r, y2-r);
+	//ESP_LOGD(TAG, "y1+r=%d y2-r=%d",y1+r, y2-r);
 	lcdDrawLine(dev, x1  ,y1+r,x1  ,y2-r,color);
 	lcdDrawLine(dev, x2  ,y1+r,x2  ,y2-r,color);  
 } 

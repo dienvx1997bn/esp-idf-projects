@@ -44,18 +44,18 @@ esp_err_t add_to_unicast_mac_list(uint8_t *mac_addr) {
     static uint8_t count = 0;
 
     if (mac_addr == NULL) {
-        ESP_LOGE(TAG, "MAC null");
+        //ESP_LOGE(TAG, "MAC null");
         return ESP_FAIL;
     }
 
     if(count >= MAX_UNICAST_DEVICE) {
-        ESP_LOGE(TAG, "MAX DEVICE");
+        //ESP_LOGE(TAG, "MAX DEVICE");
         return ESP_FAIL;
     }
     memcpy(unicast_mac_list[count], mac_addr, ESP_NOW_ETH_ALEN);
     count ++;
 
-    ESP_LOGI(TAG, "Add device "MACSTR" ", MAC2STR(mac_addr));
+    //ESP_LOGI(TAG, "Add device "MACSTR" ", MAC2STR(mac_addr));
 
     return ESP_OK;
 }
@@ -85,7 +85,7 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
     example_espnow_event_send_cb_t *send_cb = &evt.info.send_cb;
 
     if (mac_addr == NULL) {
-        ESP_LOGE(TAG, "Send cb arg error");
+        //ESP_LOGE(TAG, "Send cb arg error");
         return;
     }
 
@@ -93,7 +93,7 @@ static void example_espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_
     memcpy(send_cb->mac_addr, mac_addr, ESP_NOW_ETH_ALEN);
     send_cb->status = status;
     if (xQueueSend(s_example_espnow_queue, &evt, portMAX_DELAY) != pdTRUE) {
-        ESP_LOGW(TAG, "Send send queue fail");
+        //ESP_LOGW(TAG, "Send send queue fail");
     }
 }
 
@@ -103,7 +103,7 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     example_espnow_event_recv_cb_t *recv_cb = &evt.info.recv_cb;
 
     if (mac_addr == NULL || data == NULL || len <= 0) {
-        ESP_LOGE(TAG, "Receive cb arg error");
+        //ESP_LOGE(TAG, "Receive cb arg error");
         return;
     }
 
@@ -111,13 +111,13 @@ static void example_espnow_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
     memcpy(recv_cb->mac_addr, mac_addr, ESP_NOW_ETH_ALEN);
     recv_cb->data = malloc(len);
     if (recv_cb->data == NULL) {
-        ESP_LOGE(TAG, "Malloc receive data fail");
+        //ESP_LOGE(TAG, "Malloc receive data fail");
         return;
     }
     memcpy(recv_cb->data, data, len);
     recv_cb->data_len = len;
     if (xQueueSend(s_example_espnow_queue, &evt, portMAX_DELAY) != pdTRUE) {
-        ESP_LOGW(TAG, "Send receive queue fail");
+        //ESP_LOGW(TAG, "Send receive queue fail");
         free(recv_cb->data);
     }
 }
@@ -129,7 +129,7 @@ int example_espnow_data_parse(uint8_t *data, uint16_t data_len, uint8_t *state, 
     uint16_t crc, crc_cal = 0;
 
     if (data_len < sizeof(example_espnow_data_t)) {
-        ESP_LOGE(TAG, "Receive ESPNOW data too short, len:%d", data_len);
+        //ESP_LOGE(TAG, "Receive ESPNOW data too short, len:%d", data_len);
         return -1;
     }
 
@@ -170,7 +170,7 @@ esp_err_t example_espnow_init(void)
 
     s_example_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(example_espnow_event_t));
     if (s_example_espnow_queue == NULL) {
-        ESP_LOGE(TAG, "Create mutex fail");
+        //ESP_LOGE(TAG, "Create mutex fail");
         return ESP_FAIL;
     }
 
@@ -185,7 +185,7 @@ esp_err_t example_espnow_init(void)
     /* Add broadcast peer information to peer list. */
     esp_now_peer_info_t *peer = malloc(sizeof(esp_now_peer_info_t));
     if (peer == NULL) {
-        ESP_LOGE(TAG, "Malloc peer information fail");
+        //ESP_LOGE(TAG, "Malloc peer information fail");
         vSemaphoreDelete(s_example_espnow_queue);
         esp_now_deinit();
         return ESP_FAIL;

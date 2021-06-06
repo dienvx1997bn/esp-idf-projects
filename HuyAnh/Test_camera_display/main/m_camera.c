@@ -47,7 +47,7 @@ esp_err_t m_camera_init() {
     //initialize the camera
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Camera Init Failed");
+        //ESP_LOGE(TAG, "Camera Init Failed");
         return err;
     }
 
@@ -58,24 +58,24 @@ esp_err_t m_camera_capture() {
     //acquire a frame
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) {
-        ESP_LOGE(TAG, "Camera Capture Failed");
+        //ESP_LOGE(TAG, "Camera Capture Failed");
         return ESP_FAIL;
     }
     //replace this with your own function
     // process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
-    ESP_LOGI(TAG, "Camera Captured");
+    //ESP_LOGI(TAG, "Camera Captured");
 
     // First create a file.
-    ESP_LOGI(TAG, "Opening file");
+    //ESP_LOGI(TAG, "Opening file");
     FILE* f = fopen("/spiffs/camera.jpg", "w");
     if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for writing");
+        //ESP_LOGE(TAG, "Failed to open file for writing");
         return ESP_FAIL;
     }
     fwrite(fb->buf, fb->len, 1, f); // payload (image), payload length
 
     fclose(f);
-    ESP_LOGI(TAG, "File written");
+    //ESP_LOGI(TAG, "File written");
 
     //return the frame buffer back to the driver for reuse
     esp_camera_fb_return(fb);

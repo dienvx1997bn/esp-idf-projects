@@ -23,7 +23,7 @@
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
-#include "esp_log.h"
+#include "ESP_LOG.h"
 #include "esp_system.h"
 #include "esp_now.h"
 #include "esp_crc.h"
@@ -39,6 +39,8 @@
 #include "m_camera.h"
 #include "ultrasonic.h"
 
+
+#include "m_sim808.h"
 
 #include "m_espnow.h"
 /* ESPNOW can work in both station and softap mode. It is configured in menuconfig. */
@@ -87,13 +89,13 @@ static void SPIFFS_Directory(char * path) {
 	while (true) {
 		struct dirent*pe = readdir(dir);
 		if (!pe) break;
-		ESP_LOGI(__FUNCTION__,"d_name=%s d_ino=%d d_type=%x", pe->d_name,pe->d_ino, pe->d_type);
+		//ESP_LOGI(__FUNCTION__,"d_name=%s d_ino=%d d_type=%x", pe->d_name,pe->d_ino, pe->d_type);
 	}
 	closedir(dir);
 }
 
 void task_mpu6050(void *ignore) {
-	// ESP_LOGD(TAG, ">> mpu6050");
+	// //ESP_LOGD(TAG, ">> mpu6050");
 	i2c_config_t conf;
 	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = PIN_SDA;
@@ -161,8 +163,8 @@ void task_mpu6050(void *ignore) {
 		accel_x = (data[0] << 8) | data[1];
 		accel_y = (data[2] << 8) | data[3];
 		accel_z = (data[4] << 8) | data[5];
-		// ESP_LOGI(TAG, "accel_x: %d, accel_y: %d, accel_z: %d", accel_x, accel_y, accel_z);
-		ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
+		// //ESP_LOGI(TAG, "accel_x: %d, accel_y: %d, accel_z: %d", accel_x, accel_y, accel_z);
+		//ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 	}
 
@@ -181,7 +183,7 @@ TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 	uint16_t imageWidth;
 	uint16_t imageHeight;
 	esp_err_t err = decode_image(&pixels, file, width, height, &imageWidth, &imageHeight);
-	ESP_LOGI(__FUNCTION__, "decode_image err=%d imageWidth=%d imageHeight=%d", err, imageWidth, imageHeight);
+	//ESP_LOGI(__FUNCTION__, "decode_image err=%d imageWidth=%d imageHeight=%d", err, imageWidth, imageHeight);
 	if (err == ESP_OK) {
 
 		uint16_t _width = width;
@@ -190,7 +192,7 @@ TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 			_width = imageWidth;
 			_cols = (width - imageWidth) / 2;
 		}
-		ESP_LOGD(__FUNCTION__, "_width=%d _cols=%d", _width, _cols);
+		//ESP_LOGD(__FUNCTION__, "_width=%d _cols=%d", _width, _cols);
 
 		uint16_t _height = height;
 		uint16_t _rows = 0;
@@ -198,7 +200,7 @@ TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 			_height = imageHeight;
 			_rows = (height - imageHeight) / 2;
 		}
-		ESP_LOGD(__FUNCTION__, "_height=%d _rows=%d", _height, _rows);
+		//ESP_LOGD(__FUNCTION__, "_height=%d _rows=%d", _height, _rows);
 		uint16_t *colors = (uint16_t*)malloc(sizeof(uint16_t) * _width);
 
 		for(int y = 0; y < _height; y++){
@@ -212,12 +214,12 @@ TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 
 		free(colors);
 		release_image(&pixels, width, height);
-		ESP_LOGD(__FUNCTION__, "Finish");
+		//ESP_LOGD(__FUNCTION__, "Finish");
 	}
 
 	endTick = xTaskGetTickCount();
 	diffTick = endTick - startTick;
-	ESP_LOGI(__FUNCTION__, "elapsed time[ms]:%d",diffTick*portTICK_RATE_MS);
+	//ESP_LOGI(__FUNCTION__, "elapsed time[ms]:%d",diffTick*portTICK_RATE_MS);
 	return diffTick;
 }
 
@@ -229,7 +231,7 @@ void ST7789(void *pvParameters)
 	lcdInit(&dev, CONFIG_WIDTH, CONFIG_HEIGHT, CONFIG_OFFSETX, CONFIG_OFFSETY);
 
 #if CONFIG_INVERSION
-	ESP_LOGI(TAG, "Enable Display Inversion");
+	//ESP_LOGI(TAG, "Enable Display Inversion");
 	lcdInversionOn(&dev);
 #endif
 
@@ -260,7 +262,7 @@ void ST7789(void *pvParameters)
 
 			sprintf((char *)dst, "Distance: %d cm\n", distance);
 			lcdDrawString(&dev, fx16, 0, 20, dst, RED);
-			ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
+			//ESP_LOGI(TAG, "accel_x: %.4f, accel_y: %.4f, accel_z: %.4f", accel_x/16384.0, accel_y/16384.0, accel_z/16384.0);
 			sprintf((char *)dst, "accel_x: %.4f\n", accel_x/16384.0);
 			lcdDrawString(&dev, fx16, 0, 50, dst, RED);
 			sprintf((char *)dst, "accel_y: %.4f \n", accel_y/16384.0);
@@ -274,6 +276,10 @@ void ST7789(void *pvParameters)
 				lcdDrawString(&dev, fx16, 0, 200, dst, RED);
 				memset(recv_msg, 0, sizeof(recv_msg));
 			}
+
+			extern char sim_808_recv_data[SIM808_BUF_SIZE];
+			sprintf((char *)dst, "%s", sim_808_recv_data);
+			lcdDrawString(&dev, fx16, 0, 150, dst, RED);
 			
 		}
 		vTaskDelay(pdMS_TO_TICKS(1000));
@@ -317,7 +323,7 @@ void ultrasonic_test(void *pvParameters)
         }
         else {
 			static uint16_t time = 0;
-			printf("Time %d -Distance: %d cm\n", time, distance);
+			// printf("Time %d -Distance: %d cm\n", time, distance);
 			time++;
 
 			if(distance > 0 && distance < 10) {
@@ -325,11 +331,11 @@ void ultrasonic_test(void *pvParameters)
 				char data[50];
 				sprintf(data, "phia truoc co va cham %d", distance);
 				if (esp_now_send(unicast_mac_list[0], (uint8_t *)data, strlen(data)) != ESP_OK) {
-					ESP_LOGE(TAG, "Send notify error");
+					//ESP_LOGE(TAG, "Send notify error");
 					// example_espnow_deinit(send_param);
 					// vTaskDelete(NULL);
 				}
-				ESP_LOGI(TAG, "Send notify success");
+				//ESP_LOGI(TAG, "Send notify success");
 			}
 		}
 
@@ -359,7 +365,7 @@ static void example_espnow_task(void *pvParameter) {
 
 	s_example_espnow_queue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(example_espnow_event_t));
     if (s_example_espnow_queue == NULL) {
-        ESP_LOGE(TAG, "Create mutex fail");
+        //ESP_LOGE(TAG, "Create mutex fail");
         // return ESP_FAIL;
 		vTaskDelete(NULL);
     }
@@ -388,7 +394,7 @@ static void example_espnow_task(void *pvParameter) {
 			break;
 
 			default:
-                ESP_LOGE(TAG, "Callback type error: %d", evt.id);
+                //ESP_LOGE(TAG, "Callback type error: %d", evt.id);
                 break;
 		}
 	}
@@ -404,11 +410,11 @@ static void example_espnow_boardcast_task(void *pvParameter)
 	{
 		/* code */
 		if (esp_now_send(s_example_broadcast_mac, (uint8_t *)data, strlen(data)) != ESP_OK) {
-			ESP_LOGE(TAG, "example_espnow_boardcast_task Send error");
+			//ESP_LOGE(TAG, "example_espnow_boardcast_task Send error");
 			// example_espnow_deinit(send_param);
 			vTaskDelete(NULL);
 		}
-		ESP_LOGI(TAG, "example_espnow_boardcast_task");
+		//ESP_LOGI(TAG, "example_espnow_boardcast_task");
 		vTaskDelay(5000/portTICK_PERIOD_MS);
 	}
 }
@@ -437,7 +443,7 @@ void app_main(void)
 	gpio_set_level(33, 1);
 	vTaskDelay(200/portTICK_PERIOD_MS);
 
-	ESP_LOGI(TAG, "Initializing SPIFFS");
+	//ESP_LOGI(TAG, "Initializing SPIFFS");
 
 	esp_vfs_spiffs_conf_t conf = {
 		.base_path = "/spiffs",
@@ -452,11 +458,11 @@ void app_main(void)
 
 	if (ret != ESP_OK) {
 		if (ret == ESP_FAIL) {
-			ESP_LOGE(TAG, "Failed to mount or format filesystem");
+			//ESP_LOGE(TAG, "Failed to mount or format filesystem");
 		} else if (ret == ESP_ERR_NOT_FOUND) {
-			ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+			//ESP_LOGE(TAG, "Failed to find SPIFFS partition");
 		} else {
-			ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)",esp_err_to_name(ret));
+			//ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)",esp_err_to_name(ret));
 		}
 		return;
 	}
@@ -464,9 +470,9 @@ void app_main(void)
 	size_t total = 0, used = 0;
 	ret = esp_spiffs_info(NULL, &total,&used);
 	if (ret != ESP_OK) {
-		ESP_LOGE(TAG,"Failed to get SPIFFS partition information (%s)",esp_err_to_name(ret));
+		//ESP_LOGE(TAG,"Failed to get SPIFFS partition information (%s)",esp_err_to_name(ret));
 	} else {
-		ESP_LOGI(TAG,"Partition size: total: %d, used: %d", total, used);
+		//ESP_LOGI(TAG,"Partition size: total: %d, used: %d", total, used);
 	}
 	SPIFFS_Directory("/spiffs/");
 
@@ -474,7 +480,7 @@ void app_main(void)
 	// m_camera_init();
 	// ret = m_camera_capture();
 	// if (ret != ESP_OK) {
-    //     ESP_LOGE(TAG, "take photo fail");
+    //     //ESP_LOGE(TAG, "take photo fail");
     // }
 
 	//esp now init
@@ -486,6 +492,8 @@ void app_main(void)
 	// #else
 	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
 	// #endif
+
+	sim_init();
 	
 	
 	xTaskCreate(ST7789, "ST7789", configMINIMAL_STACK_SIZE * 10, NULL, 6, NULL);
@@ -494,8 +502,6 @@ void app_main(void)
 	// xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
 	#else
 	#endif
-	
-	
 
     xTaskCreate(example_espnow_boardcast_task, "example_espnow_boardcast_task", 2048, NULL, 4, NULL);
 	xTaskCreate(example_espnow_task, "example_espnow_task", 4096, NULL, 4, NULL);
