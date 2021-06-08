@@ -76,7 +76,7 @@ extern xQueueHandle s_example_espnow_queue;
 #define	INTERVAL		400
 #define WAIT	vTaskDelay(INTERVAL)
 
-static const char *TAG = "main";
+// static const char *TAG = "main";
 uint32_t distance;
 
 short accel_x;
@@ -272,14 +272,31 @@ void ST7789(void *pvParameters)
 
 			if(recv_msg[0] != 0) 
 			{
-				sprintf((char *)dst, "%s", recv_msg);
-				lcdDrawString(&dev, fx16, 0, 200, dst, RED);
+				example_data_send_struct example_data_send;
+				memcpy((uint8_t *)&example_data_send, recv_msg,sizeof(example_data_send_struct));
+
+				if(example_data_send.type == 0) {
+					sprintf((char *)dst, "Board cast message! type %d", example_data_send.type);
+					lcdDrawString(&dev, fx16, 0, 180, dst, RED);
+				} else {
+					sprintf((char *)dst, "co va cham %d", example_data_send.distance);
+					lcdDrawString(&dev, fx16, 0, 180, dst, RED);
+					sprintf((char *)dst, " %.6f, %.6f", example_data_send.lat, example_data_send.lon);
+					lcdDrawString(&dev, fx16, 0, 200, dst, RED);
+					sprintf((char *)dst, "hay doi huong");
+					lcdDrawString(&dev, fx16, 0, 220, dst, RED);
+				}
+
 				memset(recv_msg, 0, sizeof(recv_msg));
 			}
 
-			extern char sim_808_recv_data[SIM808_BUF_SIZE];
-			sprintf((char *)dst, "%s", sim_808_recv_data);
-			lcdDrawString(&dev, fx16, 0, 150, dst, RED);
+			// extern char date_time[SIM808_BUF_SIZE];
+			extern gnss_t m_gnss;
+
+			sprintf((char *)dst, "lat:%f-lon:%f", m_gnss.lat, m_gnss.lon);
+			lcdDrawString(&dev, fx16, 0, 140, dst, RED);
+			// sprintf((char *)dst, "%s", date_time);
+			// lcdDrawString(&dev, fx16, 0, 170, dst, RED);
 			
 		}
 		vTaskDelay(pdMS_TO_TICKS(1000));
@@ -326,11 +343,16 @@ void ultrasonic_test(void *pvParameters)
 			// printf("Time %d -Distance: %d cm\n", time, distance);
 			time++;
 
-			if(distance > 0 && distance < 10) {
+			if(distance > 0 && distance < 20) {
 				extern uint8_t unicast_mac_list[MAX_UNICAST_DEVICE][ESP_NOW_ETH_ALEN];
-				char data[50];
-				sprintf(data, "phia truoc co va cham %d", distance);
-				if (esp_now_send(unicast_mac_list[0], (uint8_t *)data, strlen(data)) != ESP_OK) {
+				example_data_send_struct example_data_send;
+				extern gnss_t m_gnss;
+				example_data_send.lat = m_gnss.lat;
+				example_data_send.lon = m_gnss.lon;
+				example_data_send.distance = distance;
+				example_data_send.type = 1;
+				
+				if (esp_now_send(unicast_mac_list[0], (uint8_t *)&example_data_send, sizeof(example_data_send_struct)) != ESP_OK) {
 					//ESP_LOGE(TAG, "Send notify error");
 					// example_espnow_deinit(send_param);
 					// vTaskDelete(NULL);
@@ -403,16 +425,16 @@ static void example_espnow_task(void *pvParameter) {
 
 static void example_espnow_boardcast_task(void *pvParameter)
 {
-	char data[] = "Hello this is broad cast message";
-
 	vTaskDelay(5000/portTICK_PERIOD_MS);
     while (1)
 	{
+		example_data_send_struct example_data_send;
+		example_data_send.type = 0;
 		/* code */
-		if (esp_now_send(s_example_broadcast_mac, (uint8_t *)data, strlen(data)) != ESP_OK) {
+		if (esp_now_send(s_example_broadcast_mac, (uint8_t *)&example_data_send, sizeof(example_data_send_struct)) != ESP_OK) {
 			//ESP_LOGE(TAG, "example_espnow_boardcast_task Send error");
 			// example_espnow_deinit(send_param);
-			vTaskDelete(NULL);
+			// vTaskDelete(NULL);
 		}
 		//ESP_LOGI(TAG, "example_espnow_boardcast_task");
 		vTaskDelay(5000/portTICK_PERIOD_MS);
@@ -493,7 +515,9 @@ void app_main(void)
 	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
 	// #endif
 
+	#if CUSTOM_BOARD
 	sim_init();
+	#endif
 	
 	
 	xTaskCreate(ST7789, "ST7789", configMINIMAL_STACK_SIZE * 10, NULL, 6, NULL);

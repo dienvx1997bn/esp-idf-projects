@@ -1,12 +1,76 @@
 #include "m_sim808.h"
 
 static const char *TAG = "uart_events";
-char sim_808_recv_data[SIM808_BUF_SIZE];
 
+gnss_t m_gnss;
+
+char date_time[SIM808_BUF_SIZE];
+char sim_808_recv_data[SIM808_BUF_SIZE];
+static uint8_t cur_pos = 0;
 
 static char data[SIM808_BUF_SIZE] = {0};
 static uint8_t state = 0;
 
+static char get_next_char() {
+    char ch =  sim_808_recv_data[cur_pos];
+    cur_pos ++;
+    return ch;
+}
+
+static esp_err_t parse_GPS_data(uint8_t len){
+    char ch;
+    char temp_position[SIM808_BUF_SIZE] = {0};
+    uint8_t temp_position_pos = 0;
+
+	// while (get_next_char() != ',');
+    // get_next_char();
+    // // if(get_next_char() == '0') {
+    // //     cur_pos = 0;
+    // //     return ESP_FAIL;
+    // // }
+    // get_next_char();
+    // get_next_char();
+
+    memcpy((uint8_t *)date_time, (uint8_t *)&sim_808_recv_data[27], len - 18);
+    cur_pos = 45;
+
+    while (get_next_char() != ',');
+    // get_next_char();
+
+    //get lat
+    do {
+        ch = get_next_char();
+        if(ch == ',') {
+            m_gnss.lat = strtof(temp_position, NULL);
+            temp_position_pos = 0;
+            memset(temp_position, 0, SIM808_BUF_SIZE);
+            break;
+        }
+            
+        temp_position[temp_position_pos] = ch;
+        temp_position_pos ++;
+
+    } while (1);
+
+    //get lon
+    do {
+        ch = get_next_char();
+        if(ch == ',') {
+            m_gnss.lon = strtof(temp_position, NULL);
+            temp_position_pos = 0;
+            memset(temp_position, 0, SIM808_BUF_SIZE);
+            break;
+        }
+            
+        temp_position[temp_position_pos] = ch;
+        temp_position_pos ++;
+
+    } while (1);
+
+    
+    return ESP_OK;
+    
+}
 
 void get_gps() {
     
@@ -23,7 +87,8 @@ void get_gps() {
         // Read data from the UART
         int len = uart_read_bytes(UART_NUM_0, (uint8_t *)sim_808_recv_data, SIM808_BUF_SIZE, 20 / portTICK_RATE_MS);
         // ESP_LOGI(TAG,"recv: %s", sim_808_recv_data);
-		
+		parse_GPS_data(len);
+
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
     

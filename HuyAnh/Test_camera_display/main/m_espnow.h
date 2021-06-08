@@ -80,6 +80,15 @@ typedef struct {
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];   //MAC address of destination device.
 } example_espnow_send_param_t;
 
+typedef struct
+{
+	//struct tm  m_time;
+    uint8_t type;
+	float lat;
+	float lon;
+    uint8_t distance;
+}example_data_send_struct;
+
 void example_espnow_deinit(example_espnow_send_param_t *send_param);
 esp_err_t example_espnow_init(void);
 void example_espnow_data_prepare(example_espnow_send_param_t *send_param);
