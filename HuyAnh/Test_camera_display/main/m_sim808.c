@@ -22,20 +22,10 @@ static esp_err_t parse_GPS_data(uint8_t len){
     char temp_position[SIM808_BUF_SIZE] = {0};
     uint8_t temp_position_pos = 0;
 
-	// while (get_next_char() != ',');
-    // get_next_char();
-    // // if(get_next_char() == '0') {
-    // //     cur_pos = 0;
-    // //     return ESP_FAIL;
-    // // }
-    // get_next_char();
-    // get_next_char();
-
     memcpy((uint8_t *)date_time, (uint8_t *)&sim_808_recv_data[27], len - 18);
     cur_pos = 45;
 
     while (get_next_char() != ',');
-    // get_next_char();
 
     //get lat
     do {
@@ -76,12 +66,10 @@ void get_gps() {
     
     while (1)
     {
-        
         // Write data to the UART
-        if(data[0] != 0) {
+        if(data[0] != 0) {  //not NULL string
             uart_write_bytes(UART_NUM_0, (const char *) data, strlen(data));
             // ESP_LOGI(TAG,"send: %s", data);
-            
         }
 
         // Read data from the UART
@@ -109,14 +97,17 @@ void sim_init() {
     uart_param_config(UART_NUM_0, &uart_config);
     uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
+    //send AT command
     vTaskDelay(1000/portTICK_PERIOD_MS);
     sprintf(data, "AT\r\n");
     uart_write_bytes(UART_NUM_0, (const char *) data, strlen(data));
 
+    //turn on GPS
     vTaskDelay(1000/portTICK_PERIOD_MS);
     sprintf(data, "AT+CGNSPWR=1\r\n");
     uart_write_bytes(UART_NUM_0, (const char *) data, strlen(data));
 
+    //save string command to read GPS data
     sprintf(data, "AT+CGNSINF\r\n");
     
     xTaskCreate(get_gps, "get_gps_task", 1024, NULL, 10, NULL);

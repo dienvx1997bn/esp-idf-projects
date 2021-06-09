@@ -43,6 +43,7 @@
 #include "m_sim808.h"
 
 #include "m_espnow.h"
+
 /* ESPNOW can work in both station and softap mode. It is configured in menuconfig. */
 #if CONFIG_ESPNOW_WIFI_MODE_STATION
 #define ESPNOW_WIFI_MODE WIFI_MODE_STA
@@ -53,28 +54,18 @@
 #endif
 
 static uint8_t s_example_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-
-#if CUSTOM_BOARD
-uint8_t s_example_peer_mac[ESP_NOW_ETH_ALEN] = { 0x8c, 0xaa, 0xb5, 0x85, 0x7b, 0x70 };
-#else
-uint8_t s_example_peer_mac[ESP_NOW_ETH_ALEN] = { 0x9c, 0x9c, 0x1f, 0xc7, 0xd1, 0x18 };
-#endif
-
 esp_err_t example_espnow_add_device(uint8_t *peer_mac, uint8_t peer_len);
 
 char recv_msg[250] = {0};
 
-extern xQueueHandle s_example_espnow_queue;
+extern xQueueHandle s_example_espnow_queue;	//use a queue to handle state of esp_now
 
-
+//config i2c
 #define PIN_SDA 15
 #define PIN_CLK 14
 #define I2C_ADDRESS 0x68 // I2C address of MPU6050
 #define MPU6050_ACCEL_XOUT_H 0x3B
 #define MPU6050_PWR_MGMT_1   0x6B
-
-#define	INTERVAL		400
-#define WAIT	vTaskDelay(INTERVAL)
 
 // static const char *TAG = "main";
 uint32_t distance;
@@ -126,9 +117,7 @@ void task_mpu6050(void *ignore) {
 	i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS);
 	i2c_cmd_link_delete(cmd);
 
-
 	uint8_t data[14];
-
 	// short accel_x;
 	// short accel_y;
 	// short accel_z;
@@ -171,6 +160,7 @@ void task_mpu6050(void *ignore) {
 	vTaskDelete(NULL);
 } // task_mpu6050
 
+//show JPEG image
 TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 	TickType_t startTick, endTick, diffTick;
 	startTick = xTaskGetTickCount();
@@ -223,6 +213,7 @@ TickType_t JPEGTest(TFT_t * dev, char * file, int width, int height) {
 	return diffTick;
 }
 
+//show item on screen
 void ST7789(void *pvParameters)
 {
 	TFT_t dev;
@@ -281,7 +272,7 @@ void ST7789(void *pvParameters)
 				} else {
 					sprintf((char *)dst, "co va cham %d", example_data_send.distance);
 					lcdDrawString(&dev, fx16, 0, 180, dst, RED);
-					sprintf((char *)dst, " %.6f, %.6f", example_data_send.lat, example_data_send.lon);
+					sprintf((char *)dst, "%.6f, %.6f", example_data_send.lat, example_data_send.lon);
 					lcdDrawString(&dev, fx16, 0, 200, dst, RED);
 					sprintf((char *)dst, "hay doi huong");
 					lcdDrawString(&dev, fx16, 0, 220, dst, RED);
@@ -304,7 +295,7 @@ void ST7789(void *pvParameters)
 
 }
 
-
+//read distance
 void ultrasonic_test(void *pvParameters)
 {
     ultrasonic_sensor_t sensor = {
@@ -320,27 +311,28 @@ void ultrasonic_test(void *pvParameters)
 		esp_err_t res = ultrasonic_measure_cm(&sensor, MAX_DISTANCE_CM, &distance);
         if (res != ESP_OK)
         {
-            printf("Error %d: ", res);
+            //printf("Error %d: ", res);
             switch (res)
             {
                 case ESP_ERR_ULTRASONIC_PING:
-                    printf("Cannot ping (device is in invalid state)\n");
+                    //printf("Cannot ping (device is in invalid state)\n");
                     break;
                 case ESP_ERR_ULTRASONIC_PING_TIMEOUT:
-                    printf("Ping timeout (no device found)\n");
+                    //printf("Ping timeout (no device found)\n");
                     break;
                 case ESP_ERR_ULTRASONIC_ECHO_TIMEOUT:
-                    printf("Echo timeout (i.e. distance too big)\n");
+                    //printf("Echo timeout (i.e. distance too big)\n");
                     break;
                 default:
-                    printf("%s\n", esp_err_to_name(res));
+                    //printf("%s\n", esp_err_to_name(res));
+					break;
             }
 			// esp_restart();
 			ultrasonic_init(&sensor);
         }
         else {
 			static uint16_t time = 0;
-			// printf("Time %d -Distance: %d cm\n", time, distance);
+			//printf("Time %d -Distance: %d cm\n", time, distance);
 			time++;
 
 			if(distance > 0 && distance < 20) {
@@ -365,6 +357,7 @@ void ultrasonic_test(void *pvParameters)
     }
 }
 
+//function use to add device with founded by broad cast message
 esp_err_t example_espnow_add_device(uint8_t *peer_mac, uint8_t peer_len) {
     /* Add broadcast peer information to peer list. */
     esp_now_peer_info_t *peer = malloc(sizeof(esp_now_peer_info_t));
@@ -430,13 +423,12 @@ static void example_espnow_boardcast_task(void *pvParameter)
 	{
 		example_data_send_struct example_data_send;
 		example_data_send.type = 0;
-		/* code */
+		//send board cast message with message type = 0
 		if (esp_now_send(s_example_broadcast_mac, (uint8_t *)&example_data_send, sizeof(example_data_send_struct)) != ESP_OK) {
 			//ESP_LOGE(TAG, "example_espnow_boardcast_task Send error");
 			// example_espnow_deinit(send_param);
 			// vTaskDelete(NULL);
 		}
-		//ESP_LOGI(TAG, "example_espnow_boardcast_task");
 		vTaskDelay(5000/portTICK_PERIOD_MS);
 	}
 }
@@ -446,7 +438,7 @@ void app_main(void)
 {
 	esp_err_t ret;
 
-	// Initialize NVS
+	// Initialize NVS, must do this first
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK( nvs_flash_erase() );
@@ -454,6 +446,7 @@ void app_main(void)
     }
     ESP_ERROR_CHECK( ret );
 
+	//blink led to know restart 
 	gpio_pad_select_gpio(33);
 	gpio_set_direction(33, GPIO_MODE_OUTPUT);
 	gpio_set_level(33, 0);
@@ -466,7 +459,6 @@ void app_main(void)
 	vTaskDelay(200/portTICK_PERIOD_MS);
 
 	//ESP_LOGI(TAG, "Initializing SPIFFS");
-
 	esp_vfs_spiffs_conf_t conf = {
 		.base_path = "/spiffs",
 		.partition_label = NULL,
@@ -496,7 +488,7 @@ void app_main(void)
 	} else {
 		//ESP_LOGI(TAG,"Partition size: total: %d, used: %d", total, used);
 	}
-	SPIFFS_Directory("/spiffs/");
+	SPIFFS_Directory("/spiffs/");	//test directory
 
 	//camera test
 	// m_camera_init();
@@ -509,31 +501,31 @@ void app_main(void)
 	example_wifi_init();
     example_espnow_init();
 
-	// #if CUSTOM_BOARD
-	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
-	// #else
-	// example_espnow_add_device(s_example_peer_mac, ESP_NOW_ETH_ALEN);
-	// #endif
-
+	//sim808 init
 	#if CUSTOM_BOARD
 	sim_init();
 	#endif
 	
-	
+	//Create task to do
+	//display on LCD
 	xTaskCreate(ST7789, "ST7789", configMINIMAL_STACK_SIZE * 10, NULL, 6, NULL);
 	#if CUSTOM_BOARD
+	//read ultrasonic sensor
 	xTaskCreate(ultrasonic_test, "ultrasonic_test", configMINIMAL_STACK_SIZE * 4, NULL, 6, NULL);
-	// xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
+	//read imu sensor
+	xTaskCreate(task_mpu6050, "task_mpu6050", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
 	#else
 	#endif
 
+	//loop to send board cast message to find orther device
     xTaskCreate(example_espnow_boardcast_task, "example_espnow_boardcast_task", 2048, NULL, 4, NULL);
+	//loop to handle data received
 	xTaskCreate(example_espnow_task, "example_espnow_task", 4096, NULL, 4, NULL);
 
-	while (1)
+	while (1)	//no need here
 	{
 		/* code */
-		vTaskDelay(INTERVAL);
+		vTaskDelay(10000/portTICK_PERIOD_MS);
 	}	//never reach
 	
 }
