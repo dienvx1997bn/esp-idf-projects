@@ -5,7 +5,7 @@
 #include "driver/gpio.h"
 #include "string.h"
 
-#define SIM808_BUF_SIZE (250)
+#define SIM808_BUF_SIZE (512)
 
 typedef struct
 {
