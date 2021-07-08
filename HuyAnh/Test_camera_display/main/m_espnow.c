@@ -34,7 +34,7 @@ static const char *TAG = "espnow_example";
 xQueueHandle s_example_espnow_queue;
 
 uint8_t unicast_mac_list[MAX_UNICAST_DEVICE][ESP_NOW_ETH_ALEN] = {0};
-
+uint8_t unicast_mac_list_count = 0;
 static uint8_t s_example_broadcast_mac[ESP_NOW_ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static uint16_t s_example_espnow_seq[EXAMPLE_ESPNOW_DATA_MAX] = { 0, 0 };
 
@@ -42,19 +42,18 @@ static uint16_t s_example_espnow_seq[EXAMPLE_ESPNOW_DATA_MAX] = { 0, 0 };
 void example_espnow_deinit(example_espnow_send_param_t *send_param);
 
 esp_err_t add_to_unicast_mac_list(uint8_t *mac_addr) {
-    static uint8_t count = 0;
 
     if (mac_addr == NULL) {
         //ESP_LOGE(TAG, "MAC null");
         return ESP_FAIL;
     }
 
-    if(count >= MAX_UNICAST_DEVICE) {
+    if(unicast_mac_list_count >= MAX_UNICAST_DEVICE - 1) {
         //ESP_LOGE(TAG, "MAX DEVICE");
         return ESP_FAIL;
     }
-    memcpy(unicast_mac_list[count], mac_addr, ESP_NOW_ETH_ALEN);
-    count ++;
+    memcpy(unicast_mac_list[unicast_mac_list_count], mac_addr, ESP_NOW_ETH_ALEN);
+    unicast_mac_list_count ++;
 
     //ESP_LOGI(TAG, "Add device "MACSTR" ", MAC2STR(mac_addr));
 
@@ -71,6 +70,9 @@ void example_wifi_init(void)
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     ESP_ERROR_CHECK( esp_wifi_set_mode(ESPNOW_WIFI_MODE) );
     ESP_ERROR_CHECK( esp_wifi_start());
+
+    extern uint8_t device_mac_address[6];
+    ESP_ERROR_CHECK( esp_wifi_get_mac(ESP_IF_WIFI_STA, device_mac_address));
 
 #if CONFIG_ESPNOW_ENABLE_LONG_RANGE
     ESP_ERROR_CHECK( esp_wifi_set_protocol(ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );

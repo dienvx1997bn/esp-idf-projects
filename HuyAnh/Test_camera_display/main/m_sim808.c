@@ -5,11 +5,12 @@ static const char *TAG = "uart_events";
 
 gnss_t m_gnss;
 
-char date_time[SIM808_BUF_SIZE];
+char date_time[50];
 char sim_808_recv_data[SIM808_BUF_SIZE];
 static uint8_t cur_pos = 0;
 
 static char data[SIM808_BUF_SIZE] = {0};
+static char temp_position[SIM808_BUF_SIZE] = {0};
 static uint8_t state = 0;
 
 static char get_next_char() {
@@ -20,7 +21,6 @@ static char get_next_char() {
 
 static esp_err_t parse_GPS_data(uint8_t len){
     char ch;
-    char temp_position[SIM808_BUF_SIZE] = {0};
     uint8_t temp_position_pos = 0;
 
     memcpy((uint8_t *)date_time, (uint8_t *)&sim_808_recv_data[27], len - 18);
@@ -64,8 +64,10 @@ static esp_err_t parse_GPS_data(uint8_t len){
 }
 
 void get_gps() {
-    
+
     //send AT command
+    sprintf(data, "AT\r\n");
+    uart_write_bytes(UART_NUM_0, (const char *) data, strlen(data));
     sprintf(data, "AT\r\n");
     uart_write_bytes(UART_NUM_0, (const char *) data, strlen(data));
 
@@ -88,6 +90,7 @@ void get_gps() {
         // Read data from the UART
         int len = uart_read_bytes(UART_NUM_0, (uint8_t *)sim_808_recv_data, SIM808_BUF_SIZE, 20 / portTICK_RATE_MS);
         // ESP_LOGI(TAG,"recv: %s", sim_808_recv_data);
+
         if(len)
 		    parse_GPS_data(len);
 
@@ -102,7 +105,7 @@ void sim_init() {
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
     uart_config_t uart_config = {
-        .baud_rate = 115200,
+        .baud_rate = 9600,
         .data_bits = UART_DATA_8_BITS,
         .parity    = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,

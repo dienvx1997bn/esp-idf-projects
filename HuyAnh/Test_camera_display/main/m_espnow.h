@@ -87,6 +87,7 @@ typedef struct
 	float lat;
 	float lon;
     uint8_t distance;
+    uint8_t mac[6];
 }example_data_send_struct;
 
 void example_espnow_deinit(example_espnow_send_param_t *send_param);
