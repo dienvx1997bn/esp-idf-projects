@@ -266,9 +266,11 @@ void ST7789(void *pvParameters)
 
 			extern char date_time[50];
 			extern gnss_t m_gnss;
-			sprintf((char *)dst, "lat:%.4f - lon:.4%f", m_gnss.lat, m_gnss.lon);
-			lcdDrawString(&dev, fx16, 0, 120, dst, RED);
-
+			if(m_gnss.lat > 0 && m_gnss.lon > 0) {
+				sprintf((char *)dst, "lat:%f-lon:%f", m_gnss.lat, m_gnss.lon);
+				lcdDrawString(&dev, fx16, 0, 120, dst, RED);
+			}
+			
 			if(recv_msg[0] != 0) 
 			{
 				example_data_send_struct example_data_send;
@@ -482,25 +484,24 @@ void app_main(void)
 	// Note: esp_vfs_spiffs_register is anall-in-one convenience function.
 	ret = esp_vfs_spiffs_register(&conf);
 
-	// if (ret != ESP_OK) {
-	// 	if (ret == ESP_FAIL) {
-	// 		//ESP_LOGE(TAG, "Failed to mount or format filesystem");
-	// 	} else if (ret == ESP_ERR_NOT_FOUND) {
-	// 		//ESP_LOGE(TAG, "Failed to find SPIFFS partition");
-	// 	} else {
-	// 		//ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)",esp_err_to_name(ret));
-	// 	}
-	// 	return;
-	// }
+	if (ret != ESP_OK) {
+		if (ret == ESP_FAIL) {
+			//ESP_LOGE(TAG, "Failed to mount or format filesystem");
+		} else if (ret == ESP_ERR_NOT_FOUND) {
+			//ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+		} else {
+			//ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)",esp_err_to_name(ret));
+		}
+		return;
+	}
 
-	// size_t total = 0, used = 0;
-	// ret = esp_spiffs_info(NULL, &total,&used);
-	// if (ret != ESP_OK) {
-	// 	//ESP_LOGE(TAG,"Failed to get SPIFFS partition information (%s)",esp_err_to_name(ret));
-	// } else {
-	// 	//ESP_LOGI(TAG,"Partition size: total: %d, used: %d", total, used);
-	// }
-	// SPIFFS_Directory("/spiffs/");	//test directory
+	size_t total = 0, used = 0;
+	ret = esp_spiffs_info(NULL, &total,&used);
+	if (ret != ESP_OK) {
+		//ESP_LOGE(TAG,"Failed to get SPIFFS partition information (%s)",esp_err_to_name(ret));
+	} else {
+		//ESP_LOGI(TAG,"Partition size: total: %d, used: %d", total, used);
+	}
 
 	//camera test
 	// m_camera_init();
